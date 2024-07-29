@@ -1,4 +1,4 @@
-from flask import Flask, request, render_template, send_file, redirect, url_for
+from flask import Flask, request, render_template, send_file
 import os
 import logging
 from docx import Document
@@ -57,7 +57,7 @@ def convert_file():
                 convert_word_to_pdf(input_filepath, output_filepath)
                 
                 # Return the generated PDF file for download
-                return send_file(output_filepath, as_attachment=True, attachment_filename='converted_file.pdf')
+                return send_file(output_filepath, as_attachment=True, download_name='converted_file.pdf')
         
         except Exception as e:
             logging.error(f"Failed to convert file: {e}")
