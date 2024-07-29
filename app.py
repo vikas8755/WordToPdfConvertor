@@ -1,9 +1,10 @@
-from flask import Flask, request, render_template, send_file
+from flask import Flask, request, render_template, send_file, redirect, url_for
 import os
 import logging
 from docx import Document
 from reportlab.lib.pagesizes import letter
 from reportlab.pdfgen import canvas
+import tempfile
 
 app = Flask(__name__)
 
@@ -42,22 +43,21 @@ def convert_file():
     
     if file:
         try:
-            uploads_dir = os.path.join(app.root_path, 'uploads')
-            if not os.path.exists(uploads_dir):
-                os.makedirs(uploads_dir)
-            
-            input_filepath = os.path.join(uploads_dir, file.filename)
-            file.save(input_filepath)
-            
-            output_filename = file.filename.replace('.docx', '.pdf')
-            output_filepath = os.path.join(uploads_dir, output_filename)
-            
-            logging.info(f"Saved input file to: {input_filepath}")
-            logging.info(f"Will save output file to: {output_filepath}")
+            # Use a temporary directory for processing files
+            with tempfile.NamedTemporaryFile(delete=False, suffix='.docx') as temp_input_file:
+                file.save(temp_input_file.name)
+                input_filepath = temp_input_file.name
+                
+                with tempfile.NamedTemporaryFile(delete=False, suffix='.pdf') as temp_output_file:
+                    output_filepath = temp_output_file.name
+                    
+                logging.info(f"Saved input file to: {input_filepath}")
+                logging.info(f"Will save output file to: {output_filepath}")
 
-            convert_word_to_pdf(input_filepath, output_filepath)
-            
-            return send_file(output_filepath, as_attachment=True)
+                convert_word_to_pdf(input_filepath, output_filepath)
+                
+                # Return the generated PDF file for download
+                return send_file(output_filepath, as_attachment=True, attachment_filename='converted_file.pdf')
         
         except Exception as e:
             logging.error(f"Failed to convert file: {e}")
